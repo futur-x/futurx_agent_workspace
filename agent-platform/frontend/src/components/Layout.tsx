@@ -23,7 +23,11 @@ const Layout = () => {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-semibold">Agent Platform</h1>
+                {/* FAW Logo in navigation */}
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-white text-sm font-bold">FAW</span>
+                </div>
+                <h1 className="text-xl font-semibold">FuturX Agent Workspace</h1>
               </div>
               <div className="ml-6 flex space-x-8">
                 <Link
@@ -34,7 +38,7 @@ const Layout = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Dashboard
+                  仪表板
                 </Link>
                 <Link
                   to="/agents"
@@ -44,7 +48,7 @@ const Layout = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Agents
+                  智能体
                 </Link>
                 <Link
                   to="/tasks"
@@ -54,7 +58,7 @@ const Layout = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Tasks
+                  任务模板
                 </Link>
                 <Link
                   to="/generate"
@@ -64,7 +68,7 @@ const Layout = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Generate
+                  生成内容
                 </Link>
                 <Link
                   to="/history"
@@ -74,7 +78,7 @@ const Layout = () => {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  History
+                  历史记录
                 </Link>
               </div>
             </div>
@@ -83,7 +87,7 @@ const Layout = () => {
                 onClick={handleLogout}
                 className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
               >
-                Logout
+                退出登录
               </button>
             </div>
           </div>

@@ -32,7 +32,7 @@ const Tasks = () => {
       resetForm()
     },
     onError: (error: any) => {
-      setError(error.response?.data?.message || 'Operation failed')
+      setError(error.response?.data?.message || '操作失败')
     }
   })
 
@@ -61,7 +61,7 @@ const Tasks = () => {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
+    if (confirm('确定要删除这个任务吗？')) {
       deleteMutation.mutate(id)
     }
   }
@@ -74,15 +74,15 @@ const Tasks = () => {
   }
 
   if (isLoading) {
-    return <div>Loading tasks...</div>
+    return <div>加载任务中...</div>
   }
 
   return (
     <div className="px-4 py-6 sm:px-0">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Tasks</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">任务模板</h1>
         <button onClick={() => setShowForm(true)} className="btn-primary">
-          Add Task
+          添加任务
         </button>
       </div>
 
@@ -90,11 +90,11 @@ const Tasks = () => {
       {showForm && (
         <div className="card mb-6">
           <h2 className="text-lg font-medium mb-4">
-            {editingTask ? 'Edit Task' : 'Add New Task'}
+            {editingTask ? '编辑任务' : '添加新任务'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <label className="block text-sm font-medium text-gray-700">名称</label>
               <input
                 type="text"
                 required
@@ -105,7 +105,7 @@ const Tasks = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Prompt Template
+                提示词模板
               </label>
               <textarea
                 required
@@ -113,10 +113,10 @@ const Tasks = () => {
                 value={formData.promptTemplate}
                 onChange={(e) => setFormData({ ...formData, promptTemplate: e.target.value })}
                 className="input-field mt-1"
-                placeholder="Enter your prompt template. Use {input_text} for user input and {file_content} for file content."
+                placeholder="输入您的提示词模板。使用 {input_text} 代表用户输入，{file_content} 代表文件内容。"
               />
               <p className="mt-1 text-sm text-gray-500">
-                Available placeholders: {'{input_text}'}, {'{file_content}'}
+                可用占位符：{'{input_text}'}, {'{file_content}'}
               </p>
             </div>
             {error && (
@@ -124,10 +124,10 @@ const Tasks = () => {
             )}
             <div className="flex gap-2">
               <button type="submit" className="btn-primary">
-                {editingTask ? 'Update' : 'Create'}
+                {editingTask ? '更新' : '创建'}
               </button>
               <button type="button" onClick={resetForm} className="btn-secondary">
-                Cancel
+                取消
               </button>
             </div>
           </form>
@@ -149,7 +149,7 @@ const Tasks = () => {
                   </pre>
                   {task.placeholders && task.placeholders.length > 0 && (
                     <div className="mt-2">
-                      <span className="text-xs text-gray-500">Placeholders: </span>
+                      <span className="text-xs text-gray-500">占位符：</span>
                       {task.placeholders.map((p: string) => (
                         <span key={p} className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded mr-1">
                           {p}
@@ -158,7 +158,7 @@ const Tasks = () => {
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mt-2">
-                    Created: {new Date(task.createdAt).toLocaleDateString()}
+                    创建时间：{new Date(task.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex gap-2 ml-4">
@@ -166,13 +166,13 @@ const Tasks = () => {
                     onClick={() => handleEdit(task)}
                     className="text-blue-600 hover:text-blue-500"
                   >
-                    Edit
+                    编辑
                   </button>
                   <button
                     onClick={() => handleDelete(task.id)}
                     className="text-red-600 hover:text-red-500"
                   >
-                    Delete
+                    删除
                   </button>
                 </div>
               </div>
@@ -180,7 +180,7 @@ const Tasks = () => {
           ))
         ) : (
           <div className="card text-center text-gray-500">
-            No tasks configured yet. Add your first task template to get started.
+            还没有配置任何任务。添加您的第一个任务模板开始使用。
           </div>
         )}
       </div>

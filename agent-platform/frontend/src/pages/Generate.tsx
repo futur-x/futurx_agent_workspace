@@ -55,7 +55,7 @@ const Generate = () => {
       pollForResults(data.streamUrl || `/api/generation/stream?generationId=${data.generationId}`)
     },
     onError: (error: any) => {
-      setError(error.response?.data?.message || 'Generation failed')
+      setError(error.response?.data?.message || '生成失败')
       setIsGenerating(false)
     }
   })
@@ -70,12 +70,12 @@ const Generate = () => {
 
   const handleGenerate = async () => {
     if (!selectedAgent || !selectedTask) {
-      setError('Please select both an agent and a task')
+      setError('请同时选择智能体和任务')
       return
     }
 
     if (!inputText && !fileContent) {
-      setError('Please provide either text input or upload a file')
+      setError('请提供文本输入或上传文件')
       return
     }
 
@@ -116,7 +116,7 @@ const Generate = () => {
     }
 
     eventSource.onerror = () => {
-      setError('Connection lost')
+      setError('连接丢失')
       setIsGenerating(false)
       eventSource.close()
     }
@@ -134,23 +134,23 @@ const Generate = () => {
 
   return (
     <div className="px-4 py-6 sm:px-0">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">Generate Content</h1>
+      <h1 className="text-2xl font-semibold text-gray-900 mb-6">生成内容</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Section */}
         <div className="space-y-6">
           <div className="card">
-            <h2 className="text-lg font-medium mb-4">Configuration</h2>
+            <h2 className="text-lg font-medium mb-4">配置</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Select Agent</label>
+                <label className="block text-sm font-medium text-gray-700">选择智能体</label>
                 <select
                   value={selectedAgent}
                   onChange={(e) => setSelectedAgent(e.target.value)}
                   className="input-field mt-1"
                 >
-                  <option value="">Choose an agent...</option>
+                  <option value="">选择一个智能体...</option>
                   {agents?.map((agent: any) => (
                     <option key={agent.id} value={agent.id}>
                       {agent.name}
@@ -160,13 +160,13 @@ const Generate = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Select Task</label>
+                <label className="block text-sm font-medium text-gray-700">选择任务</label>
                 <select
                   value={selectedTask}
                   onChange={(e) => setSelectedTask(e.target.value)}
                   className="input-field mt-1"
                 >
-                  <option value="">Choose a task...</option>
+                  <option value="">选择一个任务...</option>
                   {tasks?.map((task: any) => (
                     <option key={task.id} value={task.id}>
                       {task.name}
@@ -178,22 +178,22 @@ const Generate = () => {
           </div>
 
           <div className="card">
-            <h2 className="text-lg font-medium mb-4">Input Content</h2>
+            <h2 className="text-lg font-medium mb-4">输入内容</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Text Input</label>
+                <label className="block text-sm font-medium text-gray-700">文本输入</label>
                 <textarea
                   rows={6}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   className="input-field mt-1"
-                  placeholder="Enter your text content here..."
+                  placeholder="在此输入您的文本内容..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">File Upload</label>
+                <label className="block text-sm font-medium text-gray-700">文件上传</label>
                 <input
                   type="file"
                   accept=".txt,.md,.markdown"
@@ -202,7 +202,7 @@ const Generate = () => {
                 />
                 {fileContent && (
                   <div className="mt-2 p-3 bg-gray-50 rounded text-sm">
-                    <p className="font-medium text-gray-700">File loaded: {file?.name}</p>
+                    <p className="font-medium text-gray-700">已加载文件：{file?.name}</p>
                     <p className="text-gray-500 mt-1">
                       {fileContent.substring(0, 100)}...
                     </p>
@@ -222,7 +222,7 @@ const Generate = () => {
               disabled={isGenerating}
               className="btn-primary mt-4 w-full"
             >
-              {isGenerating ? 'Generating...' : 'Generate Content'}
+              {isGenerating ? '生成中...' : '生成内容'}
             </button>
           </div>
         </div>
@@ -230,10 +230,10 @@ const Generate = () => {
         {/* Output Section */}
         <div className="card h-fit">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium">Generated Content</h2>
+            <h2 className="text-lg font-medium">生成的内容</h2>
             {generationResult && (
               <button onClick={handleDownload} className="text-blue-600 hover:text-blue-500 text-sm">
-                Download
+                下载
               </button>
             )}
           </div>
@@ -243,7 +243,7 @@ const Generate = () => {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-4 text-gray-500">Generating content...</p>
+                  <p className="mt-4 text-gray-500">正在生成内容...</p>
                 </div>
               </div>
             ) : generationResult ? (
@@ -252,7 +252,7 @@ const Generate = () => {
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
-                Generated content will appear here
+                生成的内容将显示在这里
               </div>
             )}
           </div>

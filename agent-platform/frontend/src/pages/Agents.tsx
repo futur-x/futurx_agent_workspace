@@ -33,7 +33,7 @@ const Agents = () => {
       resetForm()
     },
     onError: (error: any) => {
-      setError(error.response?.data?.message || 'Operation failed')
+      setError(error.response?.data?.message || '操作失败')
     }
   })
 
@@ -59,7 +59,7 @@ const Agents = () => {
     // Validate connection first
     const validation = await validateMutation.mutateAsync(formData)
     if (!validation.data.valid) {
-      setError('Failed to connect to agent. Please check URL and API token.')
+      setError('连接智能体失败。请检查URL和API令牌。')
       return
     }
 
@@ -77,7 +77,7 @@ const Agents = () => {
   }
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this agent?')) {
+    if (confirm('确定要删除这个智能体吗？')) {
       deleteMutation.mutate(id)
     }
   }
@@ -90,15 +90,15 @@ const Agents = () => {
   }
 
   if (isLoading) {
-    return <div>Loading agents...</div>
+    return <div>加载智能体中...</div>
   }
 
   return (
     <div className="px-4 py-6 sm:px-0">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Agents</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">智能体</h1>
         <button onClick={() => setShowForm(true)} className="btn-primary">
-          Add Agent
+          添加智能体
         </button>
       </div>
 
@@ -106,11 +106,11 @@ const Agents = () => {
       {showForm && (
         <div className="card mb-6">
           <h2 className="text-lg font-medium mb-4">
-            {editingAgent ? 'Edit Agent' : 'Add New Agent'}
+            {editingAgent ? '编辑智能体' : '添加新智能体'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
+              <label className="block text-sm font-medium text-gray-700">名称</label>
               <input
                 type="text"
                 required
@@ -120,7 +120,7 @@ const Agents = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">API URL</label>
+              <label className="block text-sm font-medium text-gray-700">API 地址</label>
               <input
                 type="url"
                 required
@@ -131,7 +131,7 @@ const Agents = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">API Token</label>
+              <label className="block text-sm font-medium text-gray-700">API 令牌</label>
               <input
                 type="text"
                 required
@@ -145,10 +145,10 @@ const Agents = () => {
             )}
             <div className="flex gap-2">
               <button type="submit" className="btn-primary">
-                {editingAgent ? 'Update' : 'Create'}
+                {editingAgent ? '更新' : '创建'}
               </button>
               <button type="button" onClick={resetForm} className="btn-secondary">
-                Cancel
+                取消
               </button>
             </div>
           </form>
@@ -165,7 +165,7 @@ const Agents = () => {
                   <h3 className="text-lg font-medium">{agent.name}</h3>
                   <p className="text-sm text-gray-500">{agent.url}</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Created: {new Date(agent.createdAt).toLocaleDateString()}
+                    创建时间：{new Date(agent.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -173,13 +173,13 @@ const Agents = () => {
                     onClick={() => handleEdit(agent)}
                     className="text-blue-600 hover:text-blue-500"
                   >
-                    Edit
+                    编辑
                   </button>
                   <button
                     onClick={() => handleDelete(agent.id)}
                     className="text-red-600 hover:text-red-500"
                   >
-                    Delete
+                    删除
                   </button>
                 </div>
               </div>
@@ -189,14 +189,14 @@ const Agents = () => {
                     ? 'bg-green-100 text-green-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {agent.isActive ? 'Active' : 'Inactive'}
+                  {agent.isActive ? '活跃' : '未激活'}
                 </span>
               </div>
             </div>
           ))
         ) : (
           <div className="card text-center text-gray-500">
-            No agents configured yet. Add your first agent to get started.
+            还没有配置任何智能体。添加您的第一个智能体开始使用。
           </div>
         )}
       </div>
