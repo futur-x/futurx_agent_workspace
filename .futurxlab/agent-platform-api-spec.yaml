@@ -1,0 +1,830 @@
+openapi: 3.0.0
+info:
+  title: Agent Content Generation Platform API
+  version: 1.0.0
+  description: Internal API for AI-powered content generation using Dify agents
+  contact:
+    name: FuturX Development Team
+    email: dev@futurx.com
+
+servers:
+  - url: http://localhost:7860/api
+    description: Development server
+  - url: https://agent-platform.internal/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Agents
+    description: Dify agent configuration management
+  - name: Tasks
+    description: Task template management
+  - name: Generation
+    description: Content generation operations
+  - name: History
+    description: Generation history management
+  - name: Upload
+    description: File upload operations
+
+paths:
+  # Authentication Endpoints (#REF-AUTH-01)
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user with password
+      description: Validates password and creates session
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  description: System access password
+                  example: "secure_password_123"
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Session token
+                    example: "eyJhbGciOiJIUzI1NiIs..."
+                  sessionId:
+                    type: string
+                    description: Session identifier
+                    example: "sess_abc123"
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: Session expiration time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout current user
+      description: Invalidates current session
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+
+  /auth/session:
+    get:
+      tags:
+        - Authentication
+      summary: Check session status
+      operationId: checkSession
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  expiresAt:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Agent Management Endpoints (#REF-AGENT-01)
+  /agents:
+    get:
+      tags:
+        - Agents
+      summary: List all configured agents
+      operationId: listAgents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agent'
+
+    post:
+      tags:
+        - Agents
+      summary: Add new agent configuration
+      operationId: createAgent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreate'
+      responses:
+        '201':
+          description: Agent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /agents/validate:
+    post:
+      tags:
+        - Agents
+      summary: Validate agent API token
+      operationId: validateAgent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - apiToken
+              properties:
+                url:
+                  type: string
+                  format: uri
+                apiToken:
+                  type: string
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  message:
+                    type: string
+
+  /agents/{agentId}:
+    get:
+      tags:
+        - Agents
+      summary: Get agent details
+      operationId: getAgent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/agentId'
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Agents
+      summary: Update agent configuration
+      operationId: updateAgent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentUpdate'
+      responses:
+        '200':
+          description: Agent updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+
+    delete:
+      tags:
+        - Agents
+      summary: Delete agent configuration
+      operationId: deleteAgent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/agentId'
+      responses:
+        '204':
+          description: Agent deleted successfully
+
+  # Task Management Endpoints (#REF-TASK-01)
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List all task templates
+      operationId: listTasks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+
+    post:
+      tags:
+        - Tasks
+      summary: Create new task template
+      operationId: createTask
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /tasks/{taskId}:
+    get:
+      tags:
+        - Tasks
+      summary: Get task details
+      operationId: getTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/taskId'
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Tasks
+      summary: Update task template
+      operationId: updateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/taskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task template
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/taskId'
+      responses:
+        '204':
+          description: Task deleted successfully
+
+  # Content Generation Endpoints (#REF-GEN-01)
+  /generation/start:
+    post:
+      tags:
+        - Generation
+      summary: Start content generation
+      operationId: startGeneration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agentId
+                - taskId
+                - input
+              properties:
+                agentId:
+                  type: string
+                  description: Selected agent ID
+                taskId:
+                  type: string
+                  description: Selected task ID
+                input:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+                      description: User input text
+                    fileId:
+                      type: string
+                      description: Uploaded file ID
+      responses:
+        '202':
+          description: Generation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generationId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [starting, processing]
+                  streamUrl:
+                    type: string
+                    description: URL for SSE stream
+
+  /generation/stream:
+    get:
+      tags:
+        - Generation
+      summary: Stream generation results
+      operationId: streamGeneration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: generationId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SSE stream of generation chunks
+          content:
+            text/event-stream:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: string
+                    enum: [chunk, complete, error]
+                  data:
+                    type: string
+
+  /generation/download/{generationId}:
+    get:
+      tags:
+        - Generation
+      summary: Download generation result
+      operationId: downloadGeneration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: generationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Markdown file
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # File Upload Endpoint (#REF-UPLOAD-01)
+  /upload:
+    post:
+      tags:
+        - Upload
+      summary: Upload file for content generation
+      operationId: uploadFile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Text or Markdown file
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                  filename:
+                    type: string
+                  content:
+                    type: string
+                    description: Parsed file content
+                  size:
+                    type: integer
+        '400':
+          description: Unsupported file format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # History Management Endpoints (#REF-HISTORY-01)
+  /history:
+    get:
+      tags:
+        - History
+      summary: List generation history
+      operationId: listHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: History list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HistoryItem'
+                  total:
+                    type: integer
+                  hasMore:
+                    type: boolean
+
+  /history/{historyId}:
+    get:
+      tags:
+        - History
+      summary: Get history item details
+      operationId: getHistoryItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/historyId'
+      responses:
+        '200':
+          description: History item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryDetail'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /history/{historyId}/export:
+    get:
+      tags:
+        - History
+      summary: Export history item as markdown
+      operationId: exportHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/historyId'
+      responses:
+        '200':
+          description: Markdown export
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    agentId:
+      name: agentId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Agent identifier
+
+    taskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Task identifier
+
+    historyId:
+      name: historyId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: History item identifier
+
+  schemas:
+    Agent:
+      type: object
+      required:
+        - id
+        - name
+        - url
+        - createdAt
+      properties:
+        id:
+          type: string
+          example: "agent_123"
+        name:
+          type: string
+          example: "Financial Analysis Agent"
+        url:
+          type: string
+          format: uri
+          example: "https://api.dify.ai/v1"
+        apiToken:
+          type: string
+          description: Encrypted API token
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+          default: true
+
+    AgentCreate:
+      type: object
+      required:
+        - name
+        - url
+        - apiToken
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        url:
+          type: string
+          format: uri
+        apiToken:
+          type: string
+          minLength: 1
+
+    AgentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        apiToken:
+          type: string
+        isActive:
+          type: boolean
+
+    Task:
+      type: object
+      required:
+        - id
+        - name
+        - promptTemplate
+        - createdAt
+      properties:
+        id:
+          type: string
+          example: "task_456"
+        name:
+          type: string
+          example: "Daily Market Analysis"
+        promptTemplate:
+          type: string
+          example: "Analyze the following market data: {input_text}"
+        placeholders:
+          type: array
+          items:
+            type: string
+          example: ["input_text", "file_content"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskCreate:
+      type: object
+      required:
+        - name
+        - promptTemplate
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        promptTemplate:
+          type: string
+          minLength: 1
+          maxLength: 10000
+
+    TaskUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        promptTemplate:
+          type: string
+
+    HistoryItem:
+      type: object
+      required:
+        - id
+        - agentName
+        - taskName
+        - createdAt
+        - summary
+      properties:
+        id:
+          type: string
+        agentName:
+          type: string
+        taskName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        summary:
+          type: string
+          description: First 200 characters of generated content
+
+    HistoryDetail:
+      allOf:
+        - $ref: '#/components/schemas/HistoryItem'
+        - type: object
+          required:
+            - fullContent
+            - input
+          properties:
+            fullContent:
+              type: string
+              description: Complete generated content
+            input:
+              type: object
+              properties:
+                text:
+                  type: string
+                fileName:
+                  type: string
+            duration:
+              type: integer
+              description: Generation time in seconds
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "unauthorized"
+            message: "Invalid or expired session"
+
+    BadRequestError:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "bad_request"
+            message: "Validation failed"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "not_found"
+            message: "Resource does not exist"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "internal_error"
+            message: "An unexpected error occurred"

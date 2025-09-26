@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Agent {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  apiToken  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  generations Generation[]
+
+  @@index([isActive])
+}
+
+model Task {
+  id             String   @id @default(uuid())
+  name           String
+  promptTemplate String
+  placeholders   String   // JSON array of placeholder names
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  generations Generation[]
+
+  @@index([name])
+}
+
+model Generation {
+  id           String   @id @default(uuid())
+  agentId      String
+  taskId       String
+  inputText    String?
+  fileName     String?
+  fileContent  String?
+  outputContent String
+  duration     Int      // in seconds
+  status       String   // 'completed', 'failed', 'timeout'
+  error        String?
+  createdAt    DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([taskId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Upload {
+  id        String   @id @default(uuid())
+  fileName  String
+  mimeType  String
+  size      Int
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
