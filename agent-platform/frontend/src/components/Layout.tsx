@@ -23,8 +23,11 @@ const Layout = () => {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                {/* FAW Logo in navigation */}
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                {/* FAW Logo in navigation - clickable to dashboard */}
+                <div
+                  onClick={() => navigate('/dashboard')}
+                  className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3 cursor-pointer hover:bg-blue-700 transition-colors"
+                >
                   <span className="text-white text-sm font-bold">FAW</span>
                 </div>
                 <h1 className="text-xl font-semibold">FuturX Agent Workspace</h1>

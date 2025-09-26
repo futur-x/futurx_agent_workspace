@@ -31,7 +31,7 @@ const Login = () => {
         <div>
           {/* FAW Logo */}
           <div className="flex justify-center mb-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
               <span className="text-white text-3xl font-bold">FAW</span>
             </div>
           </div>
