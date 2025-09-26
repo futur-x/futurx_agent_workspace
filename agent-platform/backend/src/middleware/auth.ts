@@ -4,6 +4,9 @@ import { AppError } from './errorHandler';
 
 interface JWTPayload {
   sessionId: string;
+  userId: string;
+  username: string;
+  role: string;
   iat: number;
   exp: number;
 }

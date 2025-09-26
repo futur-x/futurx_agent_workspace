@@ -10,15 +10,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String   // Hashed password
+  role      String   @default("user") // "admin" or "user"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions    Session[]
+  generations Generation[]
+  uploads     Upload[]
+
+  @@index([username])
+  @@index([role])
+}
+
 model Session {
   id        String   @id @default(uuid())
+  userId    String
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([expiresAt])
+  @@index([userId])
 }
 
 model Agent {
@@ -50,6 +71,7 @@ model Task {
 
 model Generation {
   id           String   @id @default(uuid())
+  userId       String
   agentId      String
   taskId       String
   inputText    String?
@@ -61,9 +83,11 @@ model Generation {
   error        String?
   createdAt    DateTime @default(now())
 
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
   task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([agentId])
   @@index([taskId])
   @@index([status])
@@ -72,11 +96,15 @@ model Generation {
 
 model Upload {
   id        String   @id @default(uuid())
+  userId    String
   fileName  String
   mimeType  String
   size      Int
   content   String
   createdAt DateTime @default(now())
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@index([createdAt])
 }

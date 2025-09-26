@@ -43,10 +43,16 @@ router.post('/', upload.single('file'), async (req: Request, res: Response, next
 
     const { originalname, mimetype, size, buffer } = req.file;
     const content = buffer.toString('utf-8');
+    const userId = req.user?.userId;
 
-    // Save upload record to database
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
+
+    // Save upload record to database with userId
     const uploadRecord = await prisma.upload.create({
       data: {
+        userId,
         fileName: originalname,
         mimeType: mimetype,
         size,
@@ -69,6 +75,11 @@ router.post('/', upload.single('file'), async (req: Request, res: Response, next
 router.get('/:fileId', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { fileId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
 
     const upload = await prisma.upload.findUnique({
       where: { id: fileId }
@@ -76,6 +87,11 @@ router.get('/:fileId', authenticateToken, async (req: Request, res: Response, ne
 
     if (!upload) {
       throw new AppError('File not found', 404);
+    }
+
+    // Check if user has access to this upload
+    if (req.user?.role !== 'admin' && upload.userId !== userId) {
+      throw new AppError('Access denied', 403);
     }
 
     res.json({

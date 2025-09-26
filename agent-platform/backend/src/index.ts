@@ -10,6 +10,7 @@ import taskRouter from './routes/task.routes';
 import generationRouter from './routes/generation.routes';
 import historyRouter from './routes/history.routes';
 import uploadRouter from './routes/upload.routes';
+import usersRouter from './routes/users.routes';
 import { createServer } from 'http';
 
 // Load environment variables
@@ -40,6 +41,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/agents', agentRouter);
 app.use('/api/tasks', taskRouter);
 app.use('/api/generation', generationRouter);

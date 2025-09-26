@@ -53,9 +53,15 @@ router.post('/start', authenticateToken, async (req: Request, res: Response, nex
 
     const finalPrompt = replacePlaceholders(task.promptTemplate, placeholderValues);
 
-    // Create generation record
+    // Create generation record with userId
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
+
     const generation = await prisma.generation.create({
       data: {
+        userId,
         agentId,
         taskId,
         inputText: input.text,

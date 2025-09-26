@@ -12,18 +12,26 @@ const prisma = new PrismaClient();
 // Login endpoint
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { password } = req.body;
+    const { username, password } = req.body;
 
-    if (!password) {
-      throw new AppError('Password is required', 400);
+    if (!username || !password) {
+      throw new AppError('用户名和密码都是必需的', 400);
     }
 
-    // Check password against environment variable
-    const correctPassword = process.env.ACCESS_PASSWORD || 'admin123';
-    const isValid = password === correctPassword;
+    // Find user by username
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
 
-    if (!isValid) {
-      throw new AppError('Invalid credentials', 401);
+    if (!user || !user.isActive) {
+      throw new AppError('用户名或密码错误', 401);
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      throw new AppError('用户名或密码错误', 401);
     }
 
     // Create session
@@ -31,16 +39,22 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     const secret = process.env.JWT_SECRET || 'default-secret';
     const expiryTime = process.env.SESSION_EXPIRY || '30m';
 
-    const token = jwt.sign({ sessionId }, secret, { expiresIn: expiryTime });
+    const token = jwt.sign({
+      sessionId,
+      userId: user.id,
+      username: user.username,
+      role: user.role
+    }, secret, { expiresIn: expiryTime });
 
     // Calculate expiry date
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30);
 
-    // Save session to database
+    // Save session to database with userId
     await prisma.session.create({
       data: {
         id: sessionId,
+        userId: user.id,
         token,
         expiresAt
       }
@@ -49,6 +63,11 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
     res.json({
       token,
       sessionId,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      },
       expiresAt: expiresAt.toISOString()
     });
   } catch (error) {
@@ -86,7 +105,16 @@ router.get('/session', authenticateToken, async (req: Request, res: Response, ne
     }
 
     const session = await prisma.session.findUnique({
-      where: { id: sessionId }
+      where: { id: sessionId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            role: true
+          }
+        }
+      }
     });
 
     if (!session || session.expiresAt < new Date()) {
@@ -95,6 +123,7 @@ router.get('/session', authenticateToken, async (req: Request, res: Response, ne
 
     res.json({
       valid: true,
+      user: session.user,
       expiresAt: session.expiresAt.toISOString()
     });
   } catch (error) {

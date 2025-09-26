@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 const Login = () => {
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,7 +16,7 @@ const Login = () => {
     setLoading(true)
 
     try {
-      await login(password)
+      await login(username, password)
       navigate('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed')
@@ -38,32 +39,55 @@ const Login = () => {
             FuturX Agent Workspace
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            请输入访问密码以继续
+            请输入您的账号信息以继续
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              密码
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field mt-1"
-              placeholder="请输入密码"
-            />
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                用户名
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="input-field mt-1"
+                placeholder="请输入用户名"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                密码
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field mt-1"
+                placeholder="请输入密码"
+              />
+            </div>
           </div>
 
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <div className="flex">
                 <div className="ml-3">
-                  <p className="text-sm text-red-800">{error === 'Login failed' ? '登录失败' : error === 'Invalid password' ? '密码错误' : error}</p>
+                  <p className="text-sm text-red-800">
+                    {error === 'Login failed' ? '登录失败' :
+                     error.includes('用户名或密码') ? error :
+                     error.includes('用户名和密码') ? error :
+                     '登录失败，请检查您的用户名和密码'}
+                  </p>
                 </div>
               </div>
             </div>

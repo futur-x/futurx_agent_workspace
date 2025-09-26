@@ -1,10 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { api } from '../utils/api'
 
+interface User {
+  id: string
+  username: string
+  role: string
+}
+
 interface AuthContextType {
   isAuthenticated: boolean
   token: string | null
-  login: (password: string) => Promise<void>
+  user: User | null
+  login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   checkSession: () => Promise<boolean>
 }
@@ -22,22 +29,27 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [token, setToken] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
-    if (storedToken) {
+    const storedUser = localStorage.getItem('user')
+    if (storedToken && storedUser) {
       setToken(storedToken)
+      setUser(JSON.parse(storedUser))
       checkSession()
     }
   }, [])
 
-  const login = async (password: string) => {
+  const login = async (username: string, password: string) => {
     try {
-      const response = await api.post('/auth/login', { password })
-      const { token } = response.data
+      const response = await api.post('/auth/login', { username, password })
+      const { token, user } = response.data
 
       localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
       setToken(token)
+      setUser(user)
       setIsAuthenticated(true)
 
       // Set default authorization header
@@ -54,7 +66,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Continue with logout even if API call fails
     } finally {
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
       setToken(null)
+      setUser(null)
       setIsAuthenticated(false)
       delete api.defaults.headers.common['Authorization']
     }
@@ -65,7 +79,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      await api.get('/auth/session')
+      const response = await api.get('/auth/session')
+      if (response.data.user) {
+        setUser(response.data.user)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+      }
       setIsAuthenticated(true)
       return true
     } catch (error) {
@@ -75,7 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, login, logout, checkSession }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, user, login, logout, checkSession }}>
       {children}
     </AuthContext.Provider>
   )

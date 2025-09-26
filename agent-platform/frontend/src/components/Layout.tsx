@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 const Layout = () => {
   const location = useLocation()
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
 
   const handleLogout = async () => {
     await logout()
@@ -40,26 +40,40 @@ const Layout = () => {
                 >
                   仪表板
                 </Link>
-                <Link
-                  to="/agents"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/agents')
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  智能体
-                </Link>
-                <Link
-                  to="/tasks"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/tasks')
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  任务模板
-                </Link>
+                {user?.role === 'admin' && (
+                  <>
+                    <Link
+                      to="/agents"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        isActive('/agents')
+                          ? 'border-blue-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      智能体
+                    </Link>
+                    <Link
+                      to="/tasks"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        isActive('/tasks')
+                          ? 'border-blue-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      任务模板
+                    </Link>
+                    <Link
+                      to="/users"
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        isActive('/users')
+                          ? 'border-blue-500 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      用户管理
+                    </Link>
+                  </>
+                )}
                 <Link
                   to="/generate"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
@@ -82,7 +96,13 @@ const Layout = () => {
                 </Link>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-700">
+                <span className="font-medium">{user?.username}</span>
+                <span className="text-gray-500 ml-2">
+                  ({user?.role === 'admin' ? '管理员' : '用户'})
+                </span>
+              </div>
               <button
                 onClick={handleLogout}
                 className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"

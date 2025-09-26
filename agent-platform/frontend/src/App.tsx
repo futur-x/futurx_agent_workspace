@@ -7,6 +7,7 @@ import Agents from './pages/Agents'
 import Tasks from './pages/Tasks'
 import Generate from './pages/Generate'
 import History from './pages/History'
+import Users from './pages/Users'
 import Layout from './components/Layout'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="generate" element={<Generate />} />
             <Route path="history" element={<History />} />
+            <Route path="users" element={<Users />} />
           </Route>
         </Routes>
       </AuthProvider>

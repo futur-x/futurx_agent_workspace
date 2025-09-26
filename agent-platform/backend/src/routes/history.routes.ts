@@ -14,9 +14,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const limit = parseInt(req.query.limit as string) || 30;
     const offset = parseInt(req.query.offset as string) || 0;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
+
+    const whereClause = req.user?.role === 'admin' ? {} : { userId };
 
     const [history, total] = await Promise.all([
       prisma.generation.findMany({
+        where: whereClause,
         take: limit,
         skip: offset,
         orderBy: { createdAt: 'desc' },
@@ -33,7 +41,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           }
         }
       }),
-      prisma.generation.count()
+      prisma.generation.count({ where: whereClause })
     ]);
 
     // Create summary for each history item
@@ -60,6 +68,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.get('/:historyId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { historyId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
 
     const generation = await prisma.generation.findUnique({
       where: { id: historyId },
@@ -79,6 +92,11 @@ router.get('/:historyId', async (req: Request, res: Response, next: NextFunction
 
     if (!generation) {
       throw new AppError('History item not found', 404);
+    }
+
+    // Check if user has access to this generation
+    if (req.user?.role !== 'admin' && generation.userId !== userId) {
+      throw new AppError('Access denied', 403);
     }
 
     res.json({
@@ -104,6 +122,11 @@ router.get('/:historyId', async (req: Request, res: Response, next: NextFunction
 router.get('/:historyId/export', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { historyId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
 
     const generation = await prisma.generation.findUnique({
       where: { id: historyId },
@@ -115,6 +138,11 @@ router.get('/:historyId/export', authenticateToken, async (req: Request, res: Re
 
     if (!generation) {
       throw new AppError('History item not found', 404);
+    }
+
+    // Check if user has access to this generation
+    if (req.user?.role !== 'admin' && generation.userId !== userId) {
+      throw new AppError('Access denied', 403);
     }
 
     const markdown = `# Generated Content History
@@ -158,6 +186,11 @@ ${generation.fileContent ? `\n${generation.fileContent}` : ''}
 router.delete('/:historyId', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { historyId } = req.params;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError('User ID not found in session', 401);
+    }
 
     const generation = await prisma.generation.findUnique({
       where: { id: historyId }
@@ -165,6 +198,11 @@ router.delete('/:historyId', authenticateToken, async (req: Request, res: Respon
 
     if (!generation) {
       throw new AppError('History item not found', 404);
+    }
+
+    // Check if user has access to delete this generation
+    if (req.user?.role !== 'admin' && generation.userId !== userId) {
+      throw new AppError('Access denied', 403);
     }
 
     await prisma.generation.delete({
