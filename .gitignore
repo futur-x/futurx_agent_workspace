@@ -49,6 +49,9 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
+# FuturX Devfile
+.futurxlab/
+
 # Package lock files can be included or excluded based on preference
 # Uncomment if you want to exclude them:
 # package-lock.json
