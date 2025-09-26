@@ -154,6 +154,32 @@ ${generation.fileContent ? `\n${generation.fileContent}` : ''}
   }
 });
 
+// Delete specific history item
+router.delete('/:historyId', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { historyId } = req.params;
+
+    const generation = await prisma.generation.findUnique({
+      where: { id: historyId }
+    });
+
+    if (!generation) {
+      throw new AppError('History item not found', 404);
+    }
+
+    await prisma.generation.delete({
+      where: { id: historyId }
+    });
+
+    res.json({
+      message: 'History item deleted successfully',
+      id: historyId
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Delete old history (cleanup)
 router.delete('/cleanup', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {

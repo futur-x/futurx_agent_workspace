@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../utils/api'
 import ReactMarkdown from 'react-markdown'
 
 const History = () => {
   const [selectedItem, setSelectedItem] = useState<any>(null)
   const [viewDetails, setViewDetails] = useState(false)
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['history'],
@@ -25,7 +26,34 @@ const History = () => {
     enabled: !!selectedItem
   })
 
-  const handleExport = async (id: string) => {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return api.delete(`/history/${id}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['history'] })
+      if (viewDetails) {
+        setViewDetails(false)
+        setSelectedItem(null)
+      }
+    }
+  })
+
+  const handleDelete = async (id: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation()
+    }
+
+    if (confirm('确定要删除这条历史记录吗？')) {
+      deleteMutation.mutate(id)
+    }
+  }
+
+  const handleExport = async (id: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation()
+    }
+
     try {
       const response = await api.get(`/history/${id}/export`, {
         responseType: 'blob'
@@ -75,12 +103,20 @@ const History = () => {
                   耗时：{details.duration}秒 | 状态：{details.status === 'completed' ? '已完成' : details.status === 'failed' ? '失败' : '处理中'}
                 </p>
               </div>
-              <button
-                onClick={() => handleExport(details.id)}
-                className="btn-primary"
-              >
-                导出
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleExport(details.id)}
+                  className="btn-primary"
+                >
+                  导出
+                </button>
+                <button
+                  onClick={() => handleDelete(details.id)}
+                  className="btn-secondary bg-red-50 text-red-600 hover:bg-red-100"
+                >
+                  删除
+                </button>
+              </div>
             </div>
 
             {details.input && (
@@ -135,7 +171,7 @@ const History = () => {
                         {new Date(item.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col items-end gap-2">
                       <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
                         item.status === 'completed'
                           ? 'bg-green-100 text-green-800'
@@ -145,6 +181,20 @@ const History = () => {
                       }`}>
                         {item.status === 'completed' ? '已完成' : item.status === 'failed' ? '失败' : '处理中'}
                       </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => handleExport(item.id, e)}
+                          className="text-sm text-blue-600 hover:text-blue-500"
+                        >
+                          导出
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(item.id, e)}
+                          className="text-sm text-red-600 hover:text-red-500"
+                        >
+                          删除
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
