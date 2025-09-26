@@ -232,16 +232,29 @@ const Generate = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">文件上传</label>
-                <input
-                  type="file"
-                  accept=".txt,.md,.markdown"
-                  onChange={handleFileChange}
-                  className="mt-1"
-                />
+                <label className="block text-sm font-medium text-gray-700">
+                  文件上传
+                  <span className="text-xs text-gray-500 ml-2">（仅支持 .txt 和 .md 文件）</span>
+                </label>
+                <div className="mt-1 flex items-center">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".txt,.md,.markdown"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <span className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                      选择文件
+                    </span>
+                  </label>
+                  <span className="ml-3 text-sm text-gray-500">
+                    {file ? file.name : '未选择文件'}
+                  </span>
+                </div>
                 {fileContent && (
                   <div className="mt-2 p-3 bg-gray-50 rounded text-sm">
-                    <p className="font-medium text-gray-700">已加载文件：{file?.name}</p>
+                    <p className="font-medium text-gray-700">文件预览：</p>
                     <p className="text-gray-500 mt-1">
                       {fileContent.substring(0, 100)}...
                     </p>

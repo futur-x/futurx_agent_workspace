@@ -118,9 +118,18 @@ const Layout = () => {
       </nav>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 min-h-[calc(100vh-8rem)]">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-auto">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+          <div className="text-center text-sm text-gray-500">
+            <p>© 2025 FuturX 版权所有 | Agent内容任务平台 | v0.05</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
