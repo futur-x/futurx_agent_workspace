@@ -4,8 +4,13 @@ import { api } from '../utils/api'
 import ReactMarkdown from 'react-markdown'
 
 const Generate = () => {
-  const [selectedAgent, setSelectedAgent] = useState('')
-  const [selectedTask, setSelectedTask] = useState('')
+  // Load saved selections from localStorage
+  const [selectedAgent, setSelectedAgent] = useState(() => {
+    return localStorage.getItem('lastSelectedAgent') || ''
+  })
+  const [selectedTask, setSelectedTask] = useState(() => {
+    return localStorage.getItem('lastSelectedTask') || ''
+  })
   const [inputText, setInputText] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileContent, setFileContent] = useState('')
@@ -28,6 +33,40 @@ const Generate = () => {
       return response.data.tasks
     }
   })
+
+  // Save selections to localStorage when they change
+  useEffect(() => {
+    if (selectedAgent) {
+      localStorage.setItem('lastSelectedAgent', selectedAgent)
+    }
+  }, [selectedAgent])
+
+  useEffect(() => {
+    if (selectedTask) {
+      localStorage.setItem('lastSelectedTask', selectedTask)
+    }
+  }, [selectedTask])
+
+  // Validate saved selections still exist
+  useEffect(() => {
+    if (agents && selectedAgent) {
+      const agentExists = agents.some((agent: any) => agent.id === selectedAgent)
+      if (!agentExists) {
+        setSelectedAgent('')
+        localStorage.removeItem('lastSelectedAgent')
+      }
+    }
+  }, [agents, selectedAgent])
+
+  useEffect(() => {
+    if (tasks && selectedTask) {
+      const taskExists = tasks.some((task: any) => task.id === selectedTask)
+      if (!taskExists) {
+        setSelectedTask('')
+        localStorage.removeItem('lastSelectedTask')
+      }
+    }
+  }, [tasks, selectedTask])
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
