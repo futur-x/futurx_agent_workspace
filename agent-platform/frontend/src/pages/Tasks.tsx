@@ -1,8 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../utils/api'
+import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const Tasks = () => {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  // 权限检查：只有管理员才能访问此页面
+  useEffect(() => {
+    if (user?.role !== 'admin') {
+      navigate('/dashboard')
+    }
+  }, [user, navigate])
   const [showForm, setShowForm] = useState(false)
   const [editingTask, setEditingTask] = useState<any>(null)
   const [formData, setFormData] = useState({
@@ -71,6 +82,11 @@ const Tasks = () => {
     setEditingTask(null)
     setFormData({ name: '', promptTemplate: '' })
     setError('')
+  }
+
+  // 如果不是管理员，不渲染页面内容
+  if (user?.role !== 'admin') {
+    return null
   }
 
   if (isLoading) {

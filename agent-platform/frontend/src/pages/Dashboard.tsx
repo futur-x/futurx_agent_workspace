@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../utils/api'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 const Dashboard = () => {
+  const { user } = useAuth()
   const { data: agents } = useQuery({
     queryKey: ['agents'],
     queryFn: async () => {
@@ -36,20 +38,28 @@ const Dashboard = () => {
         <div className="card">
           <h2 className="text-lg font-medium text-gray-900 mb-2">智能体</h2>
           <p className="text-3xl font-semibold text-blue-600">{agents?.length || 0}</p>
-          <p className="text-sm text-gray-500 mt-1">已配置的智能体</p>
-          <Link to="/agents" className="mt-4 inline-block text-sm text-blue-600 hover:text-blue-500">
-            管理智能体 →
-          </Link>
+          <p className="text-sm text-gray-500 mt-1">
+            {user?.role === 'admin' ? '已配置的智能体' : '可用的智能体'}
+          </p>
+          {user?.role === 'admin' && (
+            <Link to="/agents" className="mt-4 inline-block text-sm text-blue-600 hover:text-blue-500">
+              管理智能体 →
+            </Link>
+          )}
         </div>
 
         {/* Tasks Card */}
         <div className="card">
           <h2 className="text-lg font-medium text-gray-900 mb-2">任务</h2>
           <p className="text-3xl font-semibold text-green-600">{tasks?.length || 0}</p>
-          <p className="text-sm text-gray-500 mt-1">任务模板</p>
-          <Link to="/tasks" className="mt-4 inline-block text-sm text-green-600 hover:text-green-500">
-            管理任务 →
-          </Link>
+          <p className="text-sm text-gray-500 mt-1">
+            {user?.role === 'admin' ? '任务模板' : '可用任务'}
+          </p>
+          {user?.role === 'admin' && (
+            <Link to="/tasks" className="mt-4 inline-block text-sm text-green-600 hover:text-green-500">
+              管理任务 →
+            </Link>
+          )}
         </div>
 
         {/* Quick Generate Card */}
