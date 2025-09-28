@@ -22,6 +22,8 @@ model User {
   sessions    Session[]
   generations Generation[]
   uploads     Upload[]
+  userAgents  UserAgent[]
+  userTasks   UserTask[]
 
   @@index([username])
   @@index([role])
@@ -52,6 +54,7 @@ model Agent {
   updatedAt DateTime @updatedAt
 
   generations Generation[]
+  userAgents  UserAgent[]
 
   @@index([isActive])
 }
@@ -65,6 +68,7 @@ model Task {
   updatedAt      DateTime @updatedAt
 
   generations Generation[]
+  userTasks   UserTask[]
 
   @@index([name])
 }
@@ -107,4 +111,34 @@ model Upload {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// User-Agent permission association
+model UserAgent {
+  id        String   @id @default(uuid())
+  userId    String
+  agentId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agentId])
+  @@index([userId])
+  @@index([agentId])
+}
+
+// User-Task permission association
+model UserTask {
+  id        String   @id @default(uuid())
+  userId    String
+  taskId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
 }

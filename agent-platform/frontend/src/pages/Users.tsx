@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../utils/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import UserPermissions from '../components/UserPermissions'
 
 const Users = () => {
   const { user } = useAuth()
@@ -10,6 +11,7 @@ const Users = () => {
   const queryClient = useQueryClient()
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [formData, setFormData] = useState({
     username: '',
@@ -181,6 +183,15 @@ const Users = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
+                    onClick={() => {
+                      setSelectedUser(u)
+                      setShowPermissionsModal(true)
+                    }}
+                    className="text-green-600 hover:text-green-900 mr-3"
+                  >
+                    权限
+                  </button>
+                  <button
                     onClick={() => openEditModal(u)}
                     className="text-blue-600 hover:text-blue-900 mr-3"
                   >
@@ -318,6 +329,18 @@ const Users = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Permissions Modal */}
+      {showPermissionsModal && selectedUser && (
+        <UserPermissions
+          userId={selectedUser.id}
+          username={selectedUser.username}
+          onClose={() => {
+            setShowPermissionsModal(false)
+            setSelectedUser(null)
+          }}
+        />
       )}
     </div>
   )

@@ -10,12 +10,30 @@ const prisma = new PrismaClient();
 // All routes require authentication
 router.use(authenticateToken);
 
-// List all tasks
+// List all tasks (filtered by user permissions)
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tasks = await prisma.task.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+
+    let tasks;
+
+    if (userRole === 'admin') {
+      // Admins can see all tasks
+      tasks = await prisma.task.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+    } else {
+      // Regular users only see tasks they have permission for
+      const userTasks = await prisma.userTask.findMany({
+        where: { userId },
+        include: {
+          task: true
+        }
+      });
+
+      tasks = userTasks.map(ut => ut.task);
+    }
 
     // Parse placeholders from JSON string
     const tasksWithParsedPlaceholders = tasks.map(task => ({

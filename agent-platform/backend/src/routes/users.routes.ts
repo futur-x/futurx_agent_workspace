@@ -203,6 +203,138 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req: Request, res:
   }
 });
 
+// Get user permissions (admin only)
+router.get('/:id/permissions', authenticateToken, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        userAgents: {
+          include: {
+            agent: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        userTasks: {
+          include: {
+            task: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new AppError('用户未找到', 404);
+    }
+
+    // Get all agents and tasks for selection
+    const allAgents = await prisma.agent.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    const allTasks = await prisma.task.findMany({
+      select: {
+        id: true,
+        name: true
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    res.json({
+      userId: user.id,
+      username: user.username,
+      role: user.role,
+      assignedAgents: user.userAgents.map(ua => ua.agent),
+      assignedTasks: user.userTasks.map(ut => ut.task),
+      availableAgents: allAgents,
+      availableTasks: allTasks
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update user permissions (admin only)
+router.put('/:id/permissions', authenticateToken, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+
+    const schema = Joi.object({
+      agentIds: Joi.array().items(Joi.string()).required(),
+      taskIds: Joi.array().items(Joi.string()).required()
+    });
+
+    const { error, value } = schema.validate(req.body);
+    if (error) {
+      throw new AppError(error.details[0].message, 400);
+    }
+
+    const { agentIds, taskIds } = value;
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      throw new AppError('用户未找到', 404);
+    }
+
+    // Update permissions in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Clear existing permissions
+      await tx.userAgent.deleteMany({
+        where: { userId: id }
+      });
+
+      await tx.userTask.deleteMany({
+        where: { userId: id }
+      });
+
+      // Add new agent permissions
+      if (agentIds.length > 0) {
+        await tx.userAgent.createMany({
+          data: agentIds.map((agentId: string) => ({
+            userId: id,
+            agentId
+          }))
+        });
+      }
+
+      // Add new task permissions
+      if (taskIds.length > 0) {
+        await tx.userTask.createMany({
+          data: taskIds.map((taskId: string) => ({
+            userId: id,
+            taskId
+          }))
+        });
+      }
+    });
+
+    res.json({ message: '权限已更新' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Change password (for current user)
 router.post('/change-password', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {

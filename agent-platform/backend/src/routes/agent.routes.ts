@@ -11,12 +11,30 @@ const prisma = new PrismaClient();
 // All routes require authentication
 router.use(authenticateToken);
 
-// List all agents
+// List all agents (filtered by user permissions)
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const agents = await prisma.agent.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+
+    let agents;
+
+    if (userRole === 'admin') {
+      // Admins can see all agents
+      agents = await prisma.agent.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+    } else {
+      // Regular users only see agents they have permission for
+      const userAgents = await prisma.userAgent.findMany({
+        where: { userId },
+        include: {
+          agent: true
+        }
+      });
+
+      agents = userAgents.map(ua => ua.agent);
+    }
 
     res.json({ agents });
   } catch (error) {
