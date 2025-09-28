@@ -47,6 +47,7 @@ model Session {
 model Agent {
   id        String   @id @default(uuid())
   name      String
+  type      String   @default("dify") // "dify" or "fastgpt"
   url       String
   apiToken  String
   isActive  Boolean  @default(true)
@@ -57,6 +58,7 @@ model Agent {
   userAgents  UserAgent[]
 
   @@index([isActive])
+  @@index([type])
 }
 
 model Task {

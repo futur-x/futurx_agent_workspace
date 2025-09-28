@@ -18,6 +18,7 @@ const Agents = () => {
   const [editingAgent, setEditingAgent] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: '',
+    type: 'dify' as 'dify' | 'fastgpt',
     url: '',
     apiToken: ''
   })
@@ -81,6 +82,7 @@ const Agents = () => {
     setEditingAgent(agent)
     setFormData({
       name: agent.name,
+      type: agent.type || 'dify',
       url: agent.url,
       apiToken: agent.apiToken
     })
@@ -96,7 +98,7 @@ const Agents = () => {
   const resetForm = () => {
     setShowForm(false)
     setEditingAgent(null)
-    setFormData({ name: '', url: '', apiToken: '' })
+    setFormData({ name: '', type: 'dify', url: '', apiToken: '' })
     setError('')
   }
 
@@ -136,6 +138,17 @@ const Agents = () => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700">智能体类型</label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'dify' | 'fastgpt' })}
+                className="input-field mt-1"
+              >
+                <option value="dify">Dify</option>
+                <option value="fastgpt">FastGPT</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700">API 地址</label>
               <input
                 type="url"
@@ -143,7 +156,7 @@ const Agents = () => {
                 value={formData.url}
                 onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                 className="input-field mt-1"
-                placeholder="https://api.dify.ai/v1"
+                placeholder={formData.type === 'fastgpt' ? "https://api.fastgpt.in/api/v1/chat/completions" : "https://api.dify.ai/v1"}
               />
             </div>
             <div>
@@ -179,7 +192,12 @@ const Agents = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-medium">{agent.name}</h3>
-                  <p className="text-sm text-gray-500">{agent.url}</p>
+                  <p className="text-sm text-gray-500">
+                    <span className="inline-flex px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 mr-2">
+                      {agent.type === 'fastgpt' ? 'FastGPT' : 'Dify'}
+                    </span>
+                    {agent.url}
+                  </p>
                   <p className="text-xs text-gray-400 mt-1">
                     创建时间：{new Date(agent.createdAt).toLocaleDateString()}
                   </p>

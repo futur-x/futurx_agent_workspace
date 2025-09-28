@@ -3,6 +3,7 @@ import { AppError } from '../middleware/errorHandler';
 
 const agentSchema = Joi.object({
   name: Joi.string().min(1).max(100).required(),
+  type: Joi.string().valid('dify', 'fastgpt').default('dify'),
   url: Joi.string().uri().required(),
   apiToken: Joi.string().min(1).required(),
   isActive: Joi.boolean().optional()

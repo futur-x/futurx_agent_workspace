@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler';
 import { authenticateToken } from '../middleware/auth';
 import { validateAgentInput } from '../validators/agent.validator';
 import { testDifyConnection } from '../services/dify.service';
+import { testFastGPTConnection } from '../services/fastgpt.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -69,6 +70,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const agent = await prisma.agent.create({
       data: {
         name: validatedData.name,
+        type: validatedData.type || 'dify',
         url: validatedData.url,
         apiToken: validatedData.apiToken,
         isActive: validatedData.isActive ?? true
@@ -84,13 +86,18 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 // Validate agent connection
 router.post('/validate', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { url, apiToken } = req.body;
+    const { type = 'dify', url, apiToken } = req.body;
 
     if (!url || !apiToken) {
       throw new AppError('URL and API Token are required', 400);
     }
 
-    const isValid = await testDifyConnection(url, apiToken);
+    let isValid = false;
+    if (type === 'fastgpt') {
+      isValid = await testFastGPTConnection(url, apiToken);
+    } else {
+      isValid = await testDifyConnection(url, apiToken);
+    }
 
     res.json({
       valid: isValid,
@@ -123,6 +130,7 @@ router.put('/:agentId', async (req: Request, res: Response, next: NextFunction) 
       where: { id: agentId },
       data: {
         name: validatedData.name,
+        type: validatedData.type || 'dify',
         url: validatedData.url,
         apiToken: validatedData.apiToken,
         isActive: validatedData.isActive
