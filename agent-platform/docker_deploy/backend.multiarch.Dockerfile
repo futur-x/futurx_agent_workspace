@@ -6,13 +6,13 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++ openssl openssl-dev
 
 # Copy package files
-COPY package*.json ./
+COPY backend/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy all backend files
-COPY . ./
+COPY backend/ ./
 
 # Make entrypoint script executable
 RUN chmod +x docker-entrypoint.sh
