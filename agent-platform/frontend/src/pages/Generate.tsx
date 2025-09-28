@@ -139,7 +139,7 @@ const Generate = () => {
     let eventSource: EventSource | null = null
     let retryCount = 0
     const maxRetries = 3
-    let connectionTimeout: NodeJS.Timeout | null = null
+    let connectionTimeout: number | null = null
     let lastEventTime = Date.now()
 
     const createConnection = () => {
@@ -181,12 +181,12 @@ const Generate = () => {
             setGenerationResult(data.content)
             setIsGenerating(false)
             if (connectionTimeout) clearTimeout(connectionTimeout)
-            eventSource.close()
+            eventSource?.close()
           } else if (data.event === 'error') {
             setError(data.message)
             setIsGenerating(false)
             if (connectionTimeout) clearTimeout(connectionTimeout)
-            eventSource.close()
+            eventSource?.close()
           } else if (data.event === 'progress') {
             // Show progress message to user
             console.log('Progress:', data.message)
