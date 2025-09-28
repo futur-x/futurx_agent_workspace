@@ -9,7 +9,11 @@ const agentSchema = Joi.object({
 });
 
 export const validateAgentInput = (data: any) => {
-  const { error, value } = agentSchema.validate(data);
+  // Strip unknown fields before validation
+  const { error, value } = agentSchema.validate(data, {
+    stripUnknown: true,
+    abortEarly: false
+  });
 
   if (error) {
     throw new AppError(

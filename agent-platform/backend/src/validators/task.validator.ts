@@ -7,7 +7,11 @@ const taskSchema = Joi.object({
 });
 
 export const validateTaskInput = (data: any) => {
-  const { error, value } = taskSchema.validate(data);
+  // Strip unknown fields before validation
+  const { error, value } = taskSchema.validate(data, {
+    stripUnknown: true,
+    abortEarly: false
+  });
 
   if (error) {
     throw new AppError(
