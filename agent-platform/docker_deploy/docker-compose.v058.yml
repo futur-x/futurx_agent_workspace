@@ -1,0 +1,52 @@
+# FuturX Agent Workspace - Production Docker Compose
+# Version: v0.058
+version: '3.8'
+
+services:
+  backend:
+    image: elttilz/futurx-agent-backend:v0.058
+    container_name: futurx-agent-backend
+    ports:
+      - "6173:6173"
+    environment:
+      - NODE_ENV=production
+      - PORT=6173
+      - DATABASE_URL=file:/app/data/production.db
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - SESSION_EXPIRY=${SESSION_EXPIRY:-30m}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+    networks:
+      - futurx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:6173/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: elttilz/futurx-agent-frontend:v0.058
+    container_name: futurx-agent-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - futurx-network
+    restart: unless-stopped
+
+networks:
+  futurx-network:
+    driver: bridge
+
+volumes:
+  data:
+  uploads:
