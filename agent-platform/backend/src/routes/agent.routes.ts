@@ -88,20 +88,37 @@ router.post('/validate', async (req: Request, res: Response, next: NextFunction)
   try {
     const { type = 'dify', url, apiToken } = req.body;
 
+    console.log('Validating agent connection:', { type, url });
+
     if (!url || !apiToken) {
       throw new AppError('URL and API Token are required', 400);
     }
 
     let isValid = false;
-    if (type === 'fastgpt') {
-      isValid = await testFastGPTConnection(url, apiToken);
-    } else {
-      isValid = await testDifyConnection(url, apiToken);
+    let errorMessage = '';
+
+    try {
+      if (type === 'fastgpt') {
+        isValid = await testFastGPTConnection(url, apiToken);
+        if (!isValid) {
+          errorMessage = 'FastGPT connection failed. Please check your URL format and API token.';
+        }
+      } else {
+        isValid = await testDifyConnection(url, apiToken);
+        if (!isValid) {
+          errorMessage = 'Dify connection failed. Please check your URL and API token.';
+        }
+      }
+    } catch (testError: any) {
+      console.error(`${type} connection test error:`, testError.message);
+      isValid = false;
+      errorMessage = testError.message || `Failed to connect to ${type}`;
     }
 
     res.json({
       valid: isValid,
-      message: isValid ? 'Connection successful' : 'Connection failed'
+      message: isValid ? 'Connection successful' : errorMessage,
+      type
     });
   } catch (error) {
     next(error);

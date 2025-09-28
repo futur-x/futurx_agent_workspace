@@ -68,14 +68,30 @@ const Agents = () => {
     e.preventDefault()
     setError('')
 
-    // Validate connection first
-    const validation = await validateMutation.mutateAsync(formData)
-    if (!validation.data.valid) {
-      setError('连接智能体失败。请检查URL和API令牌。')
-      return
-    }
+    try {
+      // Validate connection first
+      console.log('Validating agent:', formData)
+      const validation = await validateMutation.mutateAsync(formData)
 
-    createMutation.mutate(formData)
+      if (!validation.data.valid) {
+        // Show more specific error message
+        const errorMsg = validation.data.message ||
+          `连接${formData.type === 'fastgpt' ? 'FastGPT' : 'Dify'}智能体失败。请检查URL和API令牌。`
+        setError(errorMsg)
+
+        // For FastGPT, provide URL format hint
+        if (formData.type === 'fastgpt' && !formData.url.includes('/chat/completions')) {
+          setError(errorMsg + '\n提示：FastGPT URL 通常以 /api/v1/chat/completions 结尾')
+        }
+        return
+      }
+
+      // Connection validated, now create the agent
+      createMutation.mutate(formData)
+    } catch (error: any) {
+      console.error('Validation error:', error)
+      setError(error.response?.data?.message || '验证连接时发生错误，请重试。')
+    }
   }
 
   const handleEdit = (agent: any) => {

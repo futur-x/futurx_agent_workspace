@@ -47,12 +47,22 @@ export class FastGPTService {
   private apiToken: string;
 
   constructor(url: string, apiToken: string) {
-    // Ensure URL ends with proper path
-    this.url = url.replace(/\/+$/, '');
-    if (!this.url.includes('/api/')) {
-      this.url = `${this.url}/api/v1/chat/completions`;
-    }
+    // Store the original URL and token
+    this.url = url.replace(/\/+$/, ''); // Remove trailing slashes
     this.apiToken = apiToken;
+
+    // Ensure URL has the correct endpoint
+    // If URL already contains /chat/completions, use as is
+    // Otherwise, append the standard FastGPT endpoint
+    if (!this.url.includes('/chat/completions')) {
+      // If it's just a base URL, add the full path
+      if (!this.url.includes('/api/')) {
+        this.url = `${this.url}/api/v1/chat/completions`;
+      } else {
+        // If it already has /api/, just add /chat/completions
+        this.url = `${this.url}/chat/completions`;
+      }
+    }
   }
 
   /**
@@ -60,13 +70,15 @@ export class FastGPTService {
    */
   async testConnection(): Promise<boolean> {
     try {
+      console.log('Testing FastGPT connection to:', this.url);
+
       const response = await axios.post(
         this.url,
         {
           stream: false,
           detail: false,
           messages: [
-            { role: 'user', content: 'test' }
+            { role: 'user', content: 'Hello' } // Use a more natural test message
           ]
         },
         {
@@ -74,11 +86,17 @@ export class FastGPTService {
             'Authorization': `Bearer ${this.apiToken}`,
             'Content-Type': 'application/json'
           },
-          timeout: 10000
+          timeout: 15000 // Increase timeout to 15 seconds
         }
       );
 
-      return response.status === 200 && response.data?.choices?.length > 0;
+      // Check for successful response
+      const isValid = response.status === 200 &&
+                     response.data &&
+                     (response.data.choices?.length > 0 || response.data.answer);
+
+      console.log('FastGPT connection test result:', isValid);
+      return isValid;
     } catch (error) {
       console.error('FastGPT connection test failed:', error);
       return false;
