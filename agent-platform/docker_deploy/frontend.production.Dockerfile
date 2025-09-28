@@ -4,13 +4,13 @@ FROM node:18-alpine as builder
 WORKDIR /app
 
 # Copy package files
-COPY frontend/package*.json ./
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
-COPY frontend/ ./
+COPY . ./
 
 # Remove ES module postcss config and use CommonJS version
 RUN rm -f postcss.config.js && mv postcss.config.cjs postcss.config.js

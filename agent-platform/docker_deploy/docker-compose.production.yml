@@ -1,5 +1,5 @@
 # FuturX Agent Workspace - Production Docker Compose
-# Version: v0.057
+# Version: v0.058
 #
 # 使用说明：
 # 1. 创建目录: mkdir -p futurx-agent-workspace && cd futurx-agent-workspace
@@ -9,7 +9,7 @@
 
 services:
   backend:
-    image: elttilz/futurx_agent_workspace:v0.057-backend
+    image: elttilz/futurx-agent-backend:v0.058
     container_name: faw-backend
     ports:
       - "6173:6173"
@@ -37,7 +37,7 @@ services:
       start_period: 40s
 
   frontend:
-    image: elttilz/futurx_agent_workspace:v0.057-frontend-fixed
+    image: elttilz/futurx-agent-frontend:v0.058
     container_name: faw-frontend
     ports:
       - "5173:5173"
