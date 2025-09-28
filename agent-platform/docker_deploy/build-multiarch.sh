@@ -5,7 +5,7 @@
 
 echo "=========================================="
 echo "FuturX Agent Workspace - Multi-Arch Build"
-echo "Version: v0.056"
+echo "Version: v0.057"
 echo "=========================================="
 
 # Colors for output
@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 # Docker Hub configuration
 DOCKERHUB_USERNAME="elttilz"
 DOCKERHUB_REPO="futurx_agent_workspace"
-VERSION="v0.056"
+VERSION="v0.057"
 
 # Function to print colored output
 print_status() {

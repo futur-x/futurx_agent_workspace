@@ -136,29 +136,89 @@ const Generate = () => {
   }
 
   const pollForResults = async (streamUrl: string) => {
-    const eventSource = new EventSource(streamUrl)
+    let eventSource: EventSource | null = null
+    let retryCount = 0
+    const maxRetries = 3
+    let connectionTimeout: NodeJS.Timeout | null = null
+    let lastEventTime = Date.now()
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data)
+    const createConnection = () => {
+      eventSource = new EventSource(streamUrl)
 
-      if (data.event === 'complete') {
-        setGenerationResult(data.content)
-        setIsGenerating(false)
-        eventSource.close()
-      } else if (data.event === 'error') {
-        setError(data.message)
-        setIsGenerating(false)
-        eventSource.close()
-      } else if (data.chunk) {
-        setGenerationResult((prev) => prev + data.chunk)
+      // Reset connection timeout on new connection
+      if (connectionTimeout) {
+        clearTimeout(connectionTimeout)
+      }
+
+      // Set a timeout to detect stalled connections
+      connectionTimeout = setTimeout(() => {
+        if (Date.now() - lastEventTime > 30000 && eventSource) { // 30 seconds without events
+          console.log('Connection timeout, attempting reconnect...')
+          eventSource.close()
+          if (retryCount < maxRetries) {
+            retryCount++
+            setTimeout(createConnection, 1000 * retryCount) // Exponential backoff
+          } else {
+            setError('连接超时，请刷新页面重试')
+            setIsGenerating(false)
+          }
+        }
+      }, 30000)
+
+      eventSource.onopen = () => {
+        console.log('SSE connection established')
+        retryCount = 0 // Reset retry count on successful connection
+        lastEventTime = Date.now()
+      }
+
+      eventSource.onmessage = (event) => {
+        lastEventTime = Date.now()
+
+        try {
+          const data = JSON.parse(event.data)
+
+          if (data.event === 'complete') {
+            setGenerationResult(data.content)
+            setIsGenerating(false)
+            if (connectionTimeout) clearTimeout(connectionTimeout)
+            eventSource.close()
+          } else if (data.event === 'error') {
+            setError(data.message)
+            setIsGenerating(false)
+            if (connectionTimeout) clearTimeout(connectionTimeout)
+            eventSource.close()
+          } else if (data.event === 'progress') {
+            // Show progress message to user
+            console.log('Progress:', data.message)
+          } else if (data.event === 'connected') {
+            console.log('Connected to SSE stream')
+          } else if (data.chunk) {
+            setGenerationResult((prev) => prev + data.chunk)
+          }
+        } catch (e) {
+          console.error('Error parsing SSE message:', e)
+        }
+      }
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error)
+
+        if (eventSource?.readyState === EventSource.CLOSED) {
+          // Connection was closed, attempt to reconnect
+          if (retryCount < maxRetries) {
+            retryCount++
+            console.log(`Attempting reconnect (${retryCount}/${maxRetries})...`)
+            setTimeout(createConnection, 1000 * retryCount)
+          } else {
+            setError('连接丢失，多次重连失败')
+            setIsGenerating(false)
+            if (connectionTimeout) clearTimeout(connectionTimeout)
+          }
+        }
       }
     }
 
-    eventSource.onerror = () => {
-      setError('连接丢失')
-      setIsGenerating(false)
-      eventSource.close()
-    }
+    createConnection()
   }
 
   const handleDownload = () => {

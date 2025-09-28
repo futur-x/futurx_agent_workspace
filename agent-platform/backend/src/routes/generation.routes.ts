@@ -108,9 +108,26 @@ router.get('/stream', async (req: Request, res: Response, next: NextFunction) =>
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+
+    // Disable Node.js timeout for this connection
+    res.setTimeout(0);
 
     // Send initial connection event
     res.write('data: {"event": "connected"}\n\n');
+
+    // Keep track of last activity
+    let lastActivity = Date.now();
+
+    // Send heartbeat every 15 seconds to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      try {
+        res.write(':heartbeat\n\n'); // SSE comment as heartbeat
+      } catch (error) {
+        clearInterval(heartbeatInterval);
+        clearInterval(pollInterval);
+      }
+    }, 15000);
 
     // Poll for generation updates
     const pollInterval = setInterval(async () => {
@@ -122,17 +139,27 @@ router.get('/stream', async (req: Request, res: Response, next: NextFunction) =>
         if (!generation) {
           res.write('data: {"event": "error", "message": "Generation not found"}\n\n');
           clearInterval(pollInterval);
+          clearInterval(heartbeatInterval);
           res.end();
           return;
+        }
+
+        // Send progress updates
+        if (generation.status === 'processing') {
+          const elapsed = Math.floor((Date.now() - generation.createdAt.getTime()) / 1000);
+          res.write(`data: {"event": "progress", "message": "Processing... ${elapsed}s"}\n\n`);
+          lastActivity = Date.now();
         }
 
         if (generation.status === 'completed') {
           res.write(`data: {"event": "complete", "content": ${JSON.stringify(generation.outputContent)}}\n\n`);
           clearInterval(pollInterval);
+          clearInterval(heartbeatInterval);
           res.end();
         } else if (generation.status === 'failed') {
           res.write(`data: {"event": "error", "message": ${JSON.stringify(generation.error)}}\n\n`);
           clearInterval(pollInterval);
+          clearInterval(heartbeatInterval);
           res.end();
         }
       } catch (error) {
@@ -143,6 +170,7 @@ router.get('/stream', async (req: Request, res: Response, next: NextFunction) =>
     // Clean up on client disconnect
     req.on('close', () => {
       clearInterval(pollInterval);
+      clearInterval(heartbeatInterval);
     });
   } catch (error) {
     next(error);
