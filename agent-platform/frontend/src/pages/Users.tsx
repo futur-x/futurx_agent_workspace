@@ -18,6 +18,10 @@ const Users = () => {
     password: '',
     role: 'user'
   })
+  const [validationErrors, setValidationErrors] = useState({
+    username: '',
+    password: ''
+  })
 
   // Redirect if not admin
   useEffect(() => {
@@ -73,13 +77,61 @@ const Users = () => {
       password: '',
       role: 'user'
     })
+    setValidationErrors({
+      username: '',
+      password: ''
+    })
+  }
+
+  const validateForm = () => {
+    const errors = {
+      username: '',
+      password: ''
+    }
+    let isValid = true
+
+    // 验证用户名
+    if (!formData.username) {
+      errors.username = '用户名不能为空'
+      isValid = false
+    } else if (formData.username.length < 3) {
+      errors.username = '用户名至少需要 3 个字符'
+      isValid = false
+    } else if (formData.username.length > 50) {
+      errors.username = '用户名不能超过 50 个字符'
+      isValid = false
+    }
+
+    // 验证密码
+    if (!formData.password) {
+      errors.password = '密码不能为空'
+      isValid = false
+    } else if (formData.password.length < 6) {
+      errors.password = '密码至少需要 6 个字符'
+      isValid = false
+    }
+
+    setValidationErrors(errors)
+    return isValid
   }
 
   const handleAdd = () => {
+    if (!validateForm()) {
+      return
+    }
     createMutation.mutate(formData)
   }
 
   const handleEdit = () => {
+    // 如果输入了新密码，需要验证
+    if (formData.password && formData.password.length < 6) {
+      setValidationErrors({
+        ...validationErrors,
+        password: '密码至少需要 6 个字符'
+      })
+      return
+    }
+
     const updateData: any = {}
     if (formData.password) updateData.password = formData.password
     if (formData.role !== selectedUser.role) updateData.role = formData.role
@@ -223,20 +275,39 @@ const Users = () => {
                 <input
                   type="text"
                   value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="input-field mt-1"
-                  placeholder="输入用户名"
+                  onChange={(e) => {
+                    setFormData({ ...formData, username: e.target.value })
+                    if (validationErrors.username) {
+                      setValidationErrors({ ...validationErrors, username: '' })
+                    }
+                  }}
+                  className={`input-field mt-1 ${validationErrors.username ? 'border-red-500' : ''}`}
+                  placeholder="输入用户名（至少3个字符）"
                 />
+                {validationErrors.username && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.username}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">密码</label>
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="input-field mt-1"
-                  placeholder="输入密码"
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value })
+                    if (validationErrors.password) {
+                      setValidationErrors({ ...validationErrors, password: '' })
+                    }
+                  }}
+                  className={`input-field mt-1 ${validationErrors.password ? 'border-red-500' : ''}`}
+                  placeholder="输入密码（至少6个字符）"
                 />
+                {validationErrors.password && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+                )}
+                {!validationErrors.password && formData.password.length > 0 && formData.password.length < 6 && (
+                  <p className="mt-1 text-sm text-yellow-600">密码长度: {formData.password.length}/6</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">角色</label>
@@ -292,10 +363,21 @@ const Users = () => {
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="input-field mt-1"
-                  placeholder="输入新密码"
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value })
+                    if (validationErrors.password) {
+                      setValidationErrors({ ...validationErrors, password: '' })
+                    }
+                  }}
+                  className={`input-field mt-1 ${validationErrors.password ? 'border-red-500' : ''}`}
+                  placeholder="输入新密码（至少6个字符）"
                 />
+                {validationErrors.password && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+                )}
+                {!validationErrors.password && formData.password.length > 0 && formData.password.length < 6 && (
+                  <p className="mt-1 text-sm text-yellow-600">密码长度: {formData.password.length}/6</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">角色</label>
