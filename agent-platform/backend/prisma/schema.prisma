@@ -20,10 +20,12 @@ model User {
   updatedAt DateTime @updatedAt
 
   sessions    Session[]
-  generations Generation[]
-  uploads     Upload[]
-  userAgents  UserAgent[]
-  userTasks   UserTask[]
+  generations         Generation[]
+  uploads             Upload[]
+  userAgents          UserAgent[]
+  userTasks           UserTask[]
+  knowledgeBases      KnowledgeBase[]
+  userKnowledgeBases  UserKnowledgeBase[]
 
   @@index([username])
   @@index([role])
@@ -89,9 +91,10 @@ model Generation {
   error        String?
   createdAt    DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent                 Agent                 @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task                  Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  generationKnowledges  GenerationKnowledge[]
 
   @@index([userId])
   @@index([agentId])
@@ -143,4 +146,68 @@ model UserTask {
   @@unique([userId, taskId])
   @@index([userId])
   @@index([taskId])
+}
+
+// Knowledge Base - 知识库配置
+model KnowledgeBase {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  type        String   // "dify" or "fastgpt"
+  config      String   // JSON: API配置 { apiKey, baseUrl, datasetId, etc }
+  isActive    Boolean  @default(true)
+  createdBy   String   // 创建者用户ID
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator               User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  userKnowledgeBases    UserKnowledgeBase[]
+  generationKnowledges  GenerationKnowledge[]
+
+  @@index([createdBy])
+  @@index([type])
+  @@index([isActive])
+}
+
+// User-KnowledgeBase permission - 用户知识库权限关联
+model UserKnowledgeBase {
+  id              String   @id @default(uuid())
+  userId          String
+  knowledgeBaseId String
+  createdAt       DateTime @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeBase KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, knowledgeBaseId])
+  @@index([userId])
+  @@index([knowledgeBaseId])
+}
+
+// Generation-Knowledge association - 记录生成任务使用的知识库及检索结果
+model GenerationKnowledge {
+  id              String   @id @default(uuid())
+  generationId    String
+  knowledgeBaseId String
+  queryKeywords   String   // AI生成的查询关键词
+  retrievalResult String   // JSON: 检索结果
+  score           Float?   // 平均相似度分数
+  createdAt       DateTime @default(now())
+
+  generation    Generation    @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  knowledgeBase KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([generationId])
+  @@index([knowledgeBaseId])
+}
+
+// System Config - 系统配置(通用AI模型配置)
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique // 配置项key, 如: "query_ai_model"
+  value     String   // JSON: 配置值
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
 }

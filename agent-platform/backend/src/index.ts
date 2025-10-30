@@ -11,6 +11,8 @@ import generationRouter from './routes/generation.routes';
 import historyRouter from './routes/history.routes';
 import uploadRouter from './routes/upload.routes';
 import usersRouter from './routes/users.routes';
+import knowledgeBaseRouter from './routes/knowledgeBase.routes';
+import systemConfigRouter from './routes/systemConfig.routes';
 import { createServer } from 'http';
 
 // Load environment variables
@@ -47,6 +49,8 @@ app.use('/api/tasks', taskRouter);
 app.use('/api/generation', generationRouter);
 app.use('/api/history', historyRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/knowledge-bases', knowledgeBaseRouter);
+app.use('/api/system-config', systemConfigRouter);
 
 // Error handling middleware
 app.use(errorHandler);
