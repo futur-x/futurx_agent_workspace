@@ -78,6 +78,16 @@ const Layout = () => {
                   </>
                 )}
                 <Link
+                  to="/knowledge-bases"
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    isActive('/knowledge-bases')
+                      ? 'border-blue-500 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  知识库
+                </Link>
+                <Link
                   to="/generate"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                     isActive('/generate')
@@ -87,6 +97,18 @@ const Layout = () => {
                 >
                   生成内容
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link
+                    to="/system-config"
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      isActive('/system-config')
+                        ? 'border-blue-500 text-gray-900'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    系统配置
+                  </Link>
+                )}
                 <Link
                   to="/history"
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
