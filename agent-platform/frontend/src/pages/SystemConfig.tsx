@@ -68,13 +68,20 @@ const SystemConfig = () => {
           max_tokens: 10
         })
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       return response.json()
     },
-    onSuccess: () => {
-      toast.success('API 连接测试成功')
+    onSuccess: (data) => {
+      console.log('Test successful:', data)
+      toast.success('API 连接测试成功！模型响应正常')
     },
-    onError: () => {
-      toast.error('API 连接测试失败，请检查配置')
+    onError: (error: any) => {
+      console.error('Test failed:', error)
+      toast.error(`API 连接测试失败: ${error.message || '请检查配置'}`)
     }
   })
 

@@ -5,6 +5,7 @@ import { authenticateToken } from '../middleware/auth';
 import { generateWithDify, parseSSEMessage } from '../services/dify.service';
 import { FastGPTService } from '../services/fastgpt.service';
 import { replacePlaceholders } from '../validators/task.validator';
+import { searchKnowledgeBase, generateQueryKeywords } from '../services/knowledgeBase.service';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -12,7 +13,7 @@ const prisma = new PrismaClient();
 // Start content generation - requires authentication
 router.post('/start', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { agentId, taskId, input } = req.body;
+    const { agentId, taskId, input, knowledgeBaseIds } = req.body;
 
     if (!agentId || !taskId || !input) {
       throw new AppError('Agent ID, Task ID, and input are required', 400);
@@ -47,12 +48,88 @@ router.post('/start', authenticateToken, async (req: Request, res: Response, nex
       }
     }
 
+    // Query knowledge bases if specified
+    let knowledgeContext = '';
+    const knowledgeRecords: Array<{ knowledgeBaseId: string; queryKeywords: string; retrievalResult: string; score: number }> = [];
+
+    if (knowledgeBaseIds && Array.isArray(knowledgeBaseIds) && knowledgeBaseIds.length > 0) {
+      try {
+        // Get AI config for keyword generation
+        const aiConfig = await prisma.systemConfig.findUnique({
+          where: { key: 'query_ai_model' }
+        });
+
+        let queryKeywords = input.text || '';
+
+        // Generate query keywords using AI if configured
+        if (aiConfig) {
+          const config = JSON.parse(aiConfig.value);
+          queryKeywords = await generateQueryKeywords(
+            config,
+            input.text || '',
+            fileContent,
+            task.promptTemplate
+          );
+        }
+
+        // Query each selected knowledge base
+        for (const kbId of knowledgeBaseIds) {
+          const kb = await prisma.knowledgeBase.findUnique({
+            where: { id: kbId }
+          });
+
+          if (kb && kb.isActive) {
+            // Check user has permission
+            const userId = req.user?.userId;
+            const isAdmin = req.user?.role === 'admin';
+            const hasPermission = isAdmin ||
+              kb.createdBy === userId ||
+              await prisma.userKnowledgeBase.findFirst({
+                where: { userId, knowledgeBaseId: kbId }
+              });
+
+            if (hasPermission) {
+              const config = JSON.parse(kb.config);
+              const results = await searchKnowledgeBase(kb.type, config, queryKeywords);
+
+              if (results.length > 0) {
+                // Format results as context
+                const contextText = results.map((r: any, idx: number) =>
+                  `[知识库: ${kb.name} - 结果 ${idx + 1}]\n${r.text || r.content}\n(相似度: ${r.score || 'N/A'})`
+                ).join('\n\n');
+
+                knowledgeContext += `\n\n## 来自知识库 "${kb.name}":\n${contextText}`;
+
+                // Calculate average score
+                const avgScore = results.reduce((sum: number, r: any) => sum + (r.score || 0), 0) / results.length;
+
+                knowledgeRecords.push({
+                  knowledgeBaseId: kbId,
+                  queryKeywords,
+                  retrievalResult: JSON.stringify(results),
+                  score: avgScore
+                });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Knowledge base query error:', error);
+        // Continue without knowledge base context if error occurs
+      }
+    }
+
     const placeholderValues = {
       input_text: input.text || '',
       file_content: fileContent
     };
 
-    const finalPrompt = replacePlaceholders(task.promptTemplate, placeholderValues);
+    let finalPrompt = replacePlaceholders(task.promptTemplate, placeholderValues);
+
+    // Append knowledge base context if available
+    if (knowledgeContext) {
+      finalPrompt += `\n\n# 相关知识库内容\n${knowledgeContext}`;
+    }
 
     // Create generation record with userId
     const userId = req.user?.userId;
@@ -74,10 +151,21 @@ router.post('/start', authenticateToken, async (req: Request, res: Response, nex
       }
     });
 
+    // Save knowledge base query records
+    if (knowledgeRecords.length > 0) {
+      await prisma.generationKnowledge.createMany({
+        data: knowledgeRecords.map(record => ({
+          generationId: generation.id,
+          ...record
+        }))
+      });
+    }
+
     res.status(202).json({
       generationId: generation.id,
       status: 'starting',
-      streamUrl: `/api/generation/stream?generationId=${generation.id}&token=valid-session-token`
+      streamUrl: `/api/generation/stream?generationId=${generation.id}&token=valid-session-token`,
+      knowledgeBasesUsed: knowledgeRecords.length
     });
 
     // Start async generation based on agent type

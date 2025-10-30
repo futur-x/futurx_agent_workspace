@@ -11,6 +11,10 @@ const Generate = () => {
   const [selectedTask, setSelectedTask] = useState(() => {
     return localStorage.getItem('lastSelectedTask') || ''
   })
+  const [selectedKnowledgeBases, setSelectedKnowledgeBases] = useState<string[]>(() => {
+    const saved = localStorage.getItem('lastSelectedKnowledgeBases')
+    return saved ? JSON.parse(saved) : []
+  })
   const [inputText, setInputText] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileContent, setFileContent] = useState('')
@@ -34,6 +38,14 @@ const Generate = () => {
     }
   })
 
+  const { data: knowledgeBases } = useQuery({
+    queryKey: ['knowledgeBases'],
+    queryFn: async () => {
+      const response = await api.get('/knowledge-bases')
+      return response.data.knowledgeBases
+    }
+  })
+
   // Save selections to localStorage when they change
   useEffect(() => {
     if (selectedAgent) {
@@ -46,6 +58,10 @@ const Generate = () => {
       localStorage.setItem('lastSelectedTask', selectedTask)
     }
   }, [selectedTask])
+
+  useEffect(() => {
+    localStorage.setItem('lastSelectedKnowledgeBases', JSON.stringify(selectedKnowledgeBases))
+  }, [selectedKnowledgeBases])
 
   // Validate saved selections still exist
   useEffect(() => {
@@ -67,6 +83,17 @@ const Generate = () => {
       }
     }
   }, [tasks, selectedTask])
+
+  useEffect(() => {
+    if (knowledgeBases && selectedKnowledgeBases.length > 0) {
+      const validKBs = selectedKnowledgeBases.filter(kbId =>
+        knowledgeBases.some((kb: any) => kb.id === kbId)
+      )
+      if (validKBs.length !== selectedKnowledgeBases.length) {
+        setSelectedKnowledgeBases(validKBs)
+      }
+    }
+  }, [knowledgeBases, selectedKnowledgeBases])
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -125,6 +152,7 @@ const Generate = () => {
     const params = {
       agentId: selectedAgent,
       taskId: selectedTask,
+      knowledgeBaseIds: selectedKnowledgeBases, // Add knowledge base selection
       input: {
         text: inputText,
         fileName: file?.name,
@@ -272,6 +300,64 @@ const Generate = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  选择知识库
+                  <span className="text-xs text-gray-500 ml-2">（可多选，可不选）</span>
+                </label>
+                <div className="border border-gray-300 rounded-md p-3 max-h-48 overflow-y-auto bg-white">
+                  {knowledgeBases && knowledgeBases.length > 0 ? (
+                    <div className="space-y-2">
+                      {knowledgeBases.map((kb: any) => (
+                        <label
+                          key={kb.id}
+                          className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedKnowledgeBases.includes(kb.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedKnowledgeBases([...selectedKnowledgeBases, kb.id])
+                              } else {
+                                setSelectedKnowledgeBases(
+                                  selectedKnowledgeBases.filter((id) => id !== kb.id)
+                                )
+                              }
+                            }}
+                            className="form-checkbox h-4 w-4 text-blue-600"
+                          />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">{kb.name}</span>
+                            {kb.description && (
+                              <p className="text-xs text-gray-500">{kb.description}</p>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded ${
+                              kb.type === 'fastgpt'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-purple-100 text-purple-700'
+                            }`}
+                          >
+                            {kb.type === 'fastgpt' ? 'FastGPT' : 'Dify'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      暂无可用知识库，请先在知识库管理页面创建
+                    </p>
+                  )}
+                </div>
+                {selectedKnowledgeBases.length > 0 && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    已选择 {selectedKnowledgeBases.length} 个知识库
+                  </p>
+                )}
               </div>
             </div>
           </div>
