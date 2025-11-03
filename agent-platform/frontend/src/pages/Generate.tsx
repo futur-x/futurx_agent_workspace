@@ -335,14 +335,12 @@ const Generate = () => {
                               <p className="text-xs text-gray-500">{kb.description}</p>
                             )}
                           </div>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded ${
-                              kb.type === 'fastgpt'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-purple-100 text-purple-700'
-                            }`}
-                          >
-                            {kb.type === 'fastgpt' ? 'FastGPT' : 'Dify'}
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            kb.type === 'local'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {kb.type === 'local' ? '本地向量库' : 'FastGPT'}
                           </span>
                         </label>
                       ))}

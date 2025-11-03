@@ -1,10 +1,20 @@
 import axios from 'axios';
+import { getOrCreateCollection, searchDocuments, hybridSearch, generateEmbeddings } from './vectorStore.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // FastGPT 知识库检索
 export async function searchFastGPT(config: any, query: string): Promise<any[]> {
   try {
+    // Remove trailing /api if present to avoid duplication
+    let baseUrl = config.baseUrl.replace(/\/api\/?$/, '');
+    const url = `${baseUrl}/api/core/dataset/searchTest`;
+    console.log('FastGPT API URL:', url);
+    console.log('FastGPT config:', { datasetId: config.datasetId, baseUrl: config.baseUrl });
+
     const response = await axios.post(
-      `${config.baseUrl}/api/core/dataset/searchTest`,
+      url,
       {
         datasetId: config.datasetId,
         text: query,
@@ -24,8 +34,13 @@ export async function searchFastGPT(config: any, query: string): Promise<any[]> 
       }
     );
 
+    console.log('FastGPT response status:', response.status);
+    console.log('FastGPT response data:', JSON.stringify(response.data).substring(0, 500));
+
     if (response.data && response.data.code === 200) {
-      return response.data.data.map((item: any) => ({
+      // FastGPT response structure: { code: 200, data: { list: [...], ... } }
+      const results = response.data.data.list || [];
+      return results.map((item: any) => ({
         content: item.q + (item.a ? '\n' + item.a : ''),
         score: item.score,
         source: item.sourceName,
@@ -39,43 +54,57 @@ export async function searchFastGPT(config: any, query: string): Promise<any[]> 
     return [];
   } catch (error: any) {
     console.error('FastGPT search error:', error.message);
+    if (error.response) {
+      console.error('FastGPT error response:', error.response.status, error.response.data);
+    }
     throw new Error(`FastGPT search failed: ${error.message}`);
   }
 }
 
-// Dify 知识库检索（需要外部API）
-export async function searchDify(config: any, query: string): Promise<any[]> {
+// 本地知识库检索
+export async function searchLocalKB(
+  knowledgeBaseId: string,
+  config: any,
+  query: string,
+  embeddingConfig: any
+): Promise<any[]> {
   try {
-    const response = await axios.post(
-      `${config.baseUrl}/retrieval`,
-      {
-        retrieval_setting: {
-          top_k: config.topK || 5,
-          score_threshold: config.scoreThreshold || 0.5
-        },
-        query: query,
-        knowledge_id: config.knowledgeId
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${config.apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      }
+    // Get collection
+    const collectionName = await getOrCreateCollection(knowledgeBaseId);
+
+    // Generate query embedding using external API
+    const queryEmbeddings = await generateEmbeddings([query], embeddingConfig);
+    const queryEmbedding = queryEmbeddings[0];
+
+    // Extract keywords from query for hybrid search
+    const keywords = query.split(/\s+/).filter((word) => word.length > 2);
+
+    // Perform hybrid search with pre-generated embedding
+    const results = await hybridSearch(
+      collectionName,
+      queryEmbedding,
+      keywords,
+      config.limit || 10,
+      config.vectorWeight || 0.7
     );
 
-    if (response.data && response.data.records) {
-      return response.data.records.map((item: any) => ({
-        content: item.content,
-        score: item.score,
-        source: item.title,
-        metadata: item.metadata || {}
-      }));
-    }
-    return [];
+    // Filter by similarity threshold
+    const threshold = config.similarity || 0.4;
+    const filteredResults = results.filter(
+      (result) => result.hybridScore >= threshold
+    );
+
+    // Format results
+    return filteredResults.map((result) => ({
+      content: result.document,
+      score: result.hybridScore,
+      vectorScore: result.vectorScore,
+      keywordScore: result.keywordScore,
+      metadata: result.metadata
+    }));
   } catch (error: any) {
-    console.error('Dify search error:', error.message);
-    throw new Error(`Dify search failed: ${error.message}`);
+    console.error('Local KB search error:', error.message);
+    throw new Error(`Local KB search failed: ${error.message}`);
   }
 }
 
@@ -83,13 +112,18 @@ export async function searchDify(config: any, query: string): Promise<any[]> {
 export async function searchKnowledgeBase(
   type: string,
   config: any,
-  query: string
+  query: string,
+  knowledgeBaseId?: string,
+  embeddingConfig?: any
 ): Promise<any[]> {
   switch (type) {
     case 'fastgpt':
       return await searchFastGPT(config, query);
-    case 'dify':
-      return await searchDify(config, query);
+    case 'local':
+      if (!knowledgeBaseId || !embeddingConfig) {
+        throw new Error('Local KB search requires knowledgeBaseId and embeddingConfig');
+      }
+      return await searchLocalKB(knowledgeBaseId, config, query, embeddingConfig);
     default:
       throw new Error(`Unsupported knowledge base type: ${type}`);
   }

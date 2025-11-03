@@ -153,8 +153,8 @@ model KnowledgeBase {
   id          String   @id @default(uuid())
   name        String
   description String?
-  type        String   // "dify" or "fastgpt"
-  config      String   // JSON: API配置 { apiKey, baseUrl, datasetId, etc }
+  type        String   // "fastgpt" or "local"
+  config      String   // JSON: API配置 { apiKey, baseUrl, datasetId, etc } 或本地配置 { chunkSize, overlap, similarity }
   isActive    Boolean  @default(true)
   createdBy   String   // 创建者用户ID
   createdAt   DateTime @default(now())
@@ -163,6 +163,7 @@ model KnowledgeBase {
   creator               User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   userKnowledgeBases    UserKnowledgeBase[]
   generationKnowledges  GenerationKnowledge[]
+  documents             Document[]
 
   @@index([createdBy])
   @@index([type])
@@ -204,10 +205,30 @@ model GenerationKnowledge {
 // System Config - 系统配置(通用AI模型配置)
 model SystemConfig {
   id        String   @id @default(uuid())
-  key       String   @unique // 配置项key, 如: "query_ai_model"
+  key       String   @unique // 配置项key, 如: "query_ai_model", "embedding_model"
   value     String   // JSON: 配置值
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([key])
+}
+
+// Document - 本地知识库文档
+model Document {
+  id              String   @id @default(uuid())
+  knowledgeBaseId String
+  fileName        String
+  fileType        String   // "word", "markdown", "text"
+  fileSize        Int      // bytes
+  chunkCount      Int      // 切割后的chunk数量
+  vectorIds       String   // JSON array: ChromaDB中的向量ID列表
+  metadata        String   // JSON: 文档元数据
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  knowledgeBase KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeBaseId])
+  @@index([fileType])
+  @@index([createdAt])
 }

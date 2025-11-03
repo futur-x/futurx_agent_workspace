@@ -134,7 +134,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response, next: Ne
     const schema = Joi.object({
       name: Joi.string().min(1).max(100).required(),
       description: Joi.string().allow('').optional(),
-      type: Joi.string().valid('fastgpt', 'dify').required(),
+      type: Joi.string().valid('fastgpt', 'local').required(),
       config: Joi.object().required()
     });
 
@@ -289,11 +289,32 @@ router.post(
       const config = JSON.parse(knowledgeBase.config);
       const testQuery = '测试';
 
-      const results = await searchKnowledgeBase(knowledgeBase.type, config, testQuery);
+      let results;
+      if (knowledgeBase.type === 'local') {
+        // For local KB, we need embedding config
+        const embeddingConfigData = await prisma.systemConfig.findUnique({
+          where: { key: 'embedding_model' }
+        });
+
+        if (!embeddingConfigData) {
+          throw new AppError('请先配置 Embedding 模型', 400);
+        }
+
+        const embeddingConfig = JSON.parse(embeddingConfigData.value);
+        results = await searchKnowledgeBase(
+          knowledgeBase.type,
+          config,
+          testQuery,
+          knowledgeBase.id,
+          embeddingConfig
+        );
+      } else {
+        results = await searchKnowledgeBase(knowledgeBase.type, config, testQuery);
+      }
 
       res.json({
         success: true,
-        message: '连接成功',
+        message: '知识库连接成功',
         resultsCount: results.length
       });
     } catch (error) {

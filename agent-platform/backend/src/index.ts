@@ -13,7 +13,8 @@ import uploadRouter from './routes/upload.routes';
 import usersRouter from './routes/users.routes';
 import knowledgeBaseRouter from './routes/knowledgeBase.routes';
 import systemConfigRouter from './routes/systemConfig.routes';
-import { createServer } from 'http';
+import documentRouter from './routes/document.routes';
+import { createServer} from 'http';
 
 // Load environment variables
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/history', historyRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/knowledge-bases', knowledgeBaseRouter);
 app.use('/api/system-config', systemConfigRouter);
+app.use('/api', documentRouter);
 
 // Error handling middleware
 app.use(errorHandler);
